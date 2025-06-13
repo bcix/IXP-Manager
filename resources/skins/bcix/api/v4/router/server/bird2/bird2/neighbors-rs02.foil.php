@@ -96,6 +96,18 @@ int set allas;
         bgp_large_community.add( IXP_LC_FILTERED_PREFIX_LEN_TOO_LONG );
         accept;
     }
+#########
+# RFC9234
+#########
+<?php if( $int['autsys'] == 213973 ): // BCIX OUTREACH  ?>
+	if ! defined( bgp_otc ) then {
+        bgp_otc = 213973;
+    }
+<?php else: ?>
+	if defined( bgp_otc ) then {
+        bgp_large_community.add( IXP_LC_FILTERED_ROUTE_LEAK_DETECTED );
+    }
+<?php endif; ?>
 
 
     if !(avoid_martians()) then {
@@ -250,7 +262,7 @@ filter f_export_as<?= $int['autsys'] ?>
 
     # we should strip our own communities which we used for the looking glass
     bgp_large_community.delete( [( routeserverasn, *, * )] );
-    bgp_community.delete( [( routeserverasn, * )] );
+    bgp_community.delete( [( routeserverasn, * ), ( 0, * )] );
 
     # default position is to accept:
     accept;
