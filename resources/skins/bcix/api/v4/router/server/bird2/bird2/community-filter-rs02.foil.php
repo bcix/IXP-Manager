@@ -83,4 +83,3 @@ function ixp_community_filter(int peerasn) -> bool
 
     return true;
 }
-
