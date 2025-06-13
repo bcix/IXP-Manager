@@ -32,8 +32,6 @@ define IXP_LC_FILTERED_RPKI_INVALID             = ( routeserverasn, 1101, 13 );
 define IXP_LC_FILTERED_TRANSIT_FREE_ASN         = ( routeserverasn, 1101, 14 );
 define IXP_LC_FILTERED_TOO_MANY_COMMUNITIES     = ( routeserverasn, 1101, 15 );
 
-# to filter route leaks according to RFC9234
-define IXP_LC_FILTERED_ROUTE_LEAK_DETECTED      = ( routeserverasn, 1101, 50 );
 
 
 
@@ -72,3 +70,7 @@ filter f_export_to_master
 
     accept;
 }
+
+
+
+

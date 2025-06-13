@@ -28,23 +28,4 @@
  *
  * http://www.gnu.org/licenses/gpl-2.0.html
  */
-
 ?>
-
-<?= $this->insert('api/v4/router/server/bird2/header-rs02')   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/community-filtering-definitions-rs02')   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/community-filter-rs02')   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/rpki-rs02')   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/filter-transit-networks-rs02')   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/filter-bogon-asn-rs02')   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/neighbor-template-rs02', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] )   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/neighbors-rs02', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
-
-<?= $this->insert('api/v4/router/server/bird2/footer-rs02')   ?>

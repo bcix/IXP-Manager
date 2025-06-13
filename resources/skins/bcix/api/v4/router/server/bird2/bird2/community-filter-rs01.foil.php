@@ -43,13 +43,7 @@ function ixp_community_filter(int peerasn) -> bool
 {
     if !(source = RTS_BGP) then
             return false;
-    # RFC9234
-    if ( peerasn = 213973 && defined( bgp_otc )) then {
-            return false;
-    }
-    if ( peerasn != 213973 && ! defined( bgp_otc )) then {
-        bgp_otc = routeserverasn;
-    }
+
     # AS path prepending
     if (routeserverasn, 103, peerasn) ~ bgp_large_community then {
         bgp_path.prepend( bgp_path.first );
@@ -89,3 +83,4 @@ function ixp_community_filter(int peerasn) -> bool
 
     return true;
 }
+
