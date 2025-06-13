@@ -188,9 +188,9 @@ int set allas;
 
 <?php
     // Only do IRRDB prefix filtering if this is enabled per client:
-    $prefixes = [];	
+    $prefixes = [];
     if( $int['irrdbfilter'] ?? true ):
-	    
+
 	    $prefixes = IrrdbAggregator::prefixesForRouterConfiguration( $int[ 'cid' ], $t->router->protocol );
 
             if( count( $prefixes ) ):
@@ -292,4 +292,3 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
 }
 
 <?php endforeach; ?>
-

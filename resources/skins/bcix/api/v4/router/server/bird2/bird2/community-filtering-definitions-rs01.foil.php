@@ -70,7 +70,3 @@ filter f_export_to_master
 
     accept;
 }
-
-
-
-
