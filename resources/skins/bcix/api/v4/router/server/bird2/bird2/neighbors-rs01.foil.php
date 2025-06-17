@@ -96,6 +96,18 @@ int set allas;
         bgp_large_community.add( IXP_LC_FILTERED_PREFIX_LEN_TOO_LONG );
         accept;
     }
+#########
+# RFC9234
+#########
+<?php if( $int['autsys'] == 213973 ): // BCIX OUTREACH  ?>
+	if ! defined( bgp_otc ) then {
+        bgp_otc = 213973;
+    }
+<?php else: ?>
+	if defined( bgp_otc ) then {
+        bgp_large_community.add( IXP_LC_FILTERED_ROUTE_LEAK_DETECTED );
+    }
+<?php endif; ?>
 
 
     if !(avoid_martians()) then {
@@ -250,7 +262,7 @@ filter f_export_as<?= $int['autsys'] ?>
 
     # we should strip our own communities which we used for the looking glass
     bgp_large_community.delete( [( routeserverasn, *, * )] );
-    bgp_community.delete( [( routeserverasn, * )] );
+    bgp_community.delete( [( routeserverasn, * ), ( 0, * )] );
 
     # default position is to accept:
     accept;
@@ -287,10 +299,12 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
 <?php if( $int['autsys'] != 212232 ): // bgp.tools collector needs active session setup ?>
         passive on;
 <?php endif; ?>
-        <?php if( $t->router->rfc1997_passthru ): ?>        interpret communities off;  # enable rfc1997 well-known community pass through
-        <?php endif; ?>
-        <?php if( $int['bgpmd5secret'] && !$t->router->skip_md5 ): ?>password "<?= $int['bgpmd5secret'] ?>";<?php endif; ?>
-
+<?php if( $t->router->rfc1997_passthru ): ?>
+        interpret communities off;  # enable rfc1997 well-known community pass through
+<?php endif; ?>
+<?php if( $int['bgpmd5secret'] && !$t->router->skip_md5 ): ?>
+        password "<?= $int['bgpmd5secret'] ?>";
+<?php endif; ?>
 }
 
 <?php endforeach; ?>
