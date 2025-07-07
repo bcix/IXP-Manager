@@ -60,6 +60,8 @@ router id <?= $t->router->router_id ?>;
 # ignore interface up/down events
 protocol device { }
 
+ipv4 table master4 sorted;
+
 # This function excludes weird networks
 #  rfc1918, class D, class E, too long and too short prefixes
 function avoid_martians() -> bool

@@ -55,20 +55,3 @@ define IXP_LC_INFO_SAME_AS_NEXT_HOP = ( routeserverasn, 1001, 1200 );
 
 # ( routeserverasn, 1010, peerasn ) -> route learnt from peerasn via routeserverasn
 # ( routeserverasn, 1011, originasn ) -> route origin asn via routeserverasn
-
-
-# And the filter for examining routes in the peers import table being exported
-# to the master table
-
-filter f_export_to_master
-{
-
-    if bgp_large_community ~ [( routeserverasn, 1101, * )] then reject;
-
-    #####Graceful BGP Session Shutdown####
-    if (65535, 0) ~ bgp_community then {
-        bgp_local_pref = 0;
-    }
-
-    accept;
-}

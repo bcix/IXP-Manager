@@ -38,7 +38,6 @@ protocol rpki rpki2 {
 
 <?php endif; /* rtr2 */ ?>
 
-
 /*
  * RPKI check for the path
  *
@@ -77,4 +76,3 @@ function filter_rpki() -> bool
     <?php endif; ?>
 
 <?php endif; ?>
-

@@ -96,15 +96,15 @@ int set allas;
         bgp_large_community.add( IXP_LC_FILTERED_PREFIX_LEN_TOO_LONG );
         accept;
     }
-#########
-# RFC9234
-#########
+    #########
+    # RFC9234
+    #########
 <?php if( $int['autsys'] == 213973 ): // BCIX OUTREACH  ?>
-	if ! defined( bgp_otc ) then {
+    if ! defined( bgp_otc ) then {
         bgp_otc = 213973;
     }
 <?php else: ?>
-	if defined( bgp_otc ) then {
+    if defined( bgp_otc ) then {
         bgp_large_community.add( IXP_LC_FILTERED_ROUTE_LEAK_DETECTED );
     }
 <?php endif; ?>
@@ -259,6 +259,14 @@ filter f_export_as<?= $int['autsys'] ?>
     echo $t->insertif( 'api/v4/router/server/bird2/f_export_as' . $int['autsys'] );
 ?>
 
+    if ! (ixp_community_filter(<?= $int['autsys'] ?>) ) then reject;
+
+    if bgp_large_community ~ [( routeserverasn, 1101, * )] then reject;
+
+    #####Graceful BGP Session Shutdown####
+    if (65535, 0) ~ bgp_community then {
+        bgp_local_pref = 0;
+    }
 
     # we should strip our own communities which we used for the looking glass
     bgp_large_community.delete( [( routeserverasn, *, * )] );
@@ -269,31 +277,18 @@ filter f_export_as<?= $int['autsys'] ?>
 
 }
 
-
-
-
-
-
     <?php
     endif; // if( !in_array( $asn_filters[ $int['autsys'] ] ) ):
 ?>
-
-protocol pipe pp_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> {
-        description "Pipe for AS<?= $int['autsys'] ?> - <?= $int['cname'] ?> - VLAN Interface <?= $int['vliid'] ?>";
-        table master<?= $t->router->protocol ?>;
-        peer table t_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?>;
-        import filter f_export_to_master;
-        export where ixp_community_filter(<?= $int['autsys'] ?>);
-}
 
 protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         description "AS<?= $int['autsys'] ?> - <?= $int['cname'] ?>";
         neighbor <?= $int['address'] ?> as <?= $int['autsys'] ?>;
         <?= $t->ipproto ?> {
+        table master4;
             import table on;  # Automatic channel reloads based on RPKI changes
             import limit <?= $int['maxprefixes'] ?> action restart;
             import filter f_import_as<?= $int['autsys'] ?>;
-            table t_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?>;
             export filter f_export_as<?= $int['autsys'] ?>;
         };
 <?php if( $int['autsys'] != 212232 ): // bgp.tools collector needs active session setup ?>
