@@ -60,7 +60,11 @@ router id <?= $t->router->router_id ?>;
 # ignore interface up/down events
 protocol device { }
 
+<?php if( $t->router->protocol == 6 ): ?>
+ipv6 table master6 sorted;
+<?php else: ?>
 ipv4 table master4 sorted;
+<?php endif; ?>
 
 # This function excludes weird networks
 #  rfc1918, class D, class E, too long and too short prefixes
