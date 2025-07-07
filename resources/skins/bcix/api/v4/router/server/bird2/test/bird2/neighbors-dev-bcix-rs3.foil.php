@@ -109,7 +109,6 @@ int set allas;
     }
 <?php endif; ?>
 
-
     if !(avoid_martians()) then {
         bgp_large_community.add( IXP_LC_FILTERED_BOGON );
         accept;
@@ -285,7 +284,11 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         description "AS<?= $int['autsys'] ?> - <?= $int['cname'] ?>";
         neighbor <?= $int['address'] ?> as <?= $int['autsys'] ?>;
         <?= $t->ipproto ?> {
-        table master4;
+<?php if( $t->router->protocol == 6 ): ?>
+            table master6;
+<?php else: ?>
+            table master4;
+<?php endif; ?>
             import table on;  # Automatic channel reloads based on RPKI changes
             import limit <?= $int['maxprefixes'] ?> action restart;
             import filter f_import_as<?= $int['autsys'] ?>;
