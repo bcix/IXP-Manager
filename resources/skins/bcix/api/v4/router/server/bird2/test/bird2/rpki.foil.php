@@ -38,31 +38,6 @@ protocol rpki rpki2 {
 
 <?php endif; /* rtr2 */ ?>
 
-/*
- * RPKI check for the path
- *
- * return: true means the filter should stop processing, false means keep processing
- */
-function filter_rpki() -> bool
-{
-    # RPKI check
-    if( roa_check( t_roa, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
-        print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
-        bgp_large_community.add( IXP_LC_FILTERED_RPKI_INVALID );
-        return true;
-    }
-
-    if( roa_check( t_roa, net, bgp_path.last_nonaggregated ) = ROA_VALID ) then {
-        bgp_large_community.add( IXP_LC_INFO_RPKI_VALID );
-        return true;
-    }
-
-    # RPKI unknown, keep checking and mark as unknown for info
-    bgp_large_community.add( IXP_LC_INFO_RPKI_UNKNOWN );
-
-    return false;
-}
-
 <?php else:  /* $t->router->getRPKI() */ ?>
 
     <?php if( $t->router->rpki ): ?>
