@@ -52,6 +52,7 @@ template bgp tb_rsclient {
         export all;
         ###add-path support RFC7911###
         add paths tx;
+        import keep filtered on;
 <?php if( $t->router->protocol == 6 ): ?>
 
 <?php endif; ?>

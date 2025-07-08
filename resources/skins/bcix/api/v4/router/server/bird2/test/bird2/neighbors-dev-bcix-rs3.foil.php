@@ -94,7 +94,7 @@ int set allas;
     if ( net ~ [ 0.0.0.0/0{<?= config( 'ixp.irrdb.min_v4_subnet_size', 24 ) == 32 ? 32 : config( 'ixp.irrdb.min_v4_subnet_size', 24 ) + 1 ?>,32} ] ) then {
 <?php endif; ?>
         bgp_large_community.add( IXP_LC_FILTERED_PREFIX_LEN_TOO_LONG );
-        accept;
+        reject "Prefix length too long [", net.len, "] - REJECTING ", net;
     }
     #########
     # RFC9234
@@ -106,24 +106,25 @@ int set allas;
 <?php else: ?>
     if defined( bgp_otc ) then {
         bgp_large_community.add( IXP_LC_FILTERED_ROUTE_LEAK_DETECTED );
+        reject "Route leak detected RFC9234 [otc=", bgp_otc ,"] - REJECTING ", net;
     }
 <?php endif; ?>
 
     if !(avoid_martians()) then {
         bgp_large_community.add( IXP_LC_FILTERED_BOGON );
-        accept;
+        reject "An IP Bogon was detected - REJECTING ", net;
     }
 
     # Belt and braces: must have at least one ASN in the path
     if( bgp_path.len < 1 ) then {
         bgp_large_community.add( IXP_LC_FILTERED_AS_PATH_TOO_SHORT );
-        accept;
+        reject "AS path too short [", bgp_path.len ,"] - REJECTING ", net;
     }
 
     # Peer ASN == route's first ASN?
     if (bgp_path.first != <?= $int['autsys'] ?> ) then {
         bgp_large_community.add( IXP_LC_FILTERED_FIRST_AS_NOT_PEER_AS );
-        accept;
+        reject "First AS not peer AS [", bgp_path.first, "] - REJECTING ", net;
     }
 
     # set of all IPs this ASN uses to peer with on this VLAN
@@ -138,21 +139,21 @@ int set allas;
         } else {
             # looks like hijacking (intentional or not)
             bgp_large_community.add( IXP_LC_FILTERED_NEXT_HOP_NOT_PEER_IP );
-            accept;
+            reject "Next hop not peer IP [", bgp_next_hop, "] - REJECTING ", net;
         }
     }
 
 
     # Filter Known Transit Networks
-    if filter_has_transit_path() then accept;
+    if filter_has_transit_path() then reject "transit-free ASN in AS-Path - REJECTING ", net;
 
     # Filter Known Bogon as in path
-    if filter_has_bogon_as_path() then accept;
+    if filter_has_bogon_as_path() then reject "AS path contains a bogon AS - REJECTING ", net;
 
     # Belt and braces: no one needs an ASN path with > 64 hops, that's just broken
     if( bgp_path.len > 64 ) then {
         bgp_large_community.add( IXP_LC_FILTERED_AS_PATH_TOO_LONG );
-        accept;
+        reject "AS path too long [", bgp_path.len ,"] - REJECTING ", net;
     }
 
 
@@ -178,7 +179,7 @@ int set allas;
     # Ensure origin ASN is in the neighbors AS-SET
     if !(bgp_path.last_nonaggregated ~ allas) then {
         bgp_large_community.add( IXP_LC_FILTERED_IRRDB_ORIGIN_AS_FILTERED );
-        accept;
+        reject "Origin AS not in peer AS-SET - REJECTING ", net;
     }
 
 <?php
@@ -186,8 +187,20 @@ int set allas;
 
 <?php if( $t->router->rpki && config( 'ixp.rpki.rtr1.host' ) ): ?>
 
-    # RPKI test - if it's INVALID or VALID, we are done
-    if filter_rpki() then accept;
+    # RPKI check
+    if( roa_check( t_roa, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
+        print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
+        bgp_large_community.add( IXP_LC_FILTERED_RPKI_INVALID );
+        reject "Prefix is RPKI INVALID - REJECTING ", net;
+    }
+
+    if( roa_check( t_roa, net, bgp_path.last_nonaggregated ) = ROA_VALID ) then {
+        bgp_large_community.add( IXP_LC_INFO_RPKI_VALID );
+        accept;
+    }
+
+    # RPKI unknown, keep checking and mark as unknown for info
+    bgp_large_community.add( IXP_LC_INFO_RPKI_UNKNOWN );
 
 <?php else: ?>
 
@@ -218,7 +231,7 @@ int set allas;
     if ! (net ~ allnet) then {
         bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
         bgp_large_community.add( <?= $int['rsmorespecifics'] ? 'IXP_LC_INFO_IRRDB_FILTERED_LOOSE' : 'IXP_LC_INFO_IRRDB_FILTERED_STRICT' ?> );
-        accept;
+        reject "IRRDB Prefix not found in AS-SET - REJECTING ", net;
     } else {
         bgp_large_community.add( IXP_LC_INFO_IRRDB_VALID );
     }
@@ -228,7 +241,7 @@ int set allas;
     # Deny everything because the IRR database returned nothing
     bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
     bgp_large_community.add( IXP_LC_INFO_IRRDB_PREFIX_EMPTY );
-    accept;
+    reject "IRRDB Prefix not found in AS-SET, IRRDB Prefix is empty - REJECTING ", net;
 
 <?php   endif; ?>
 
