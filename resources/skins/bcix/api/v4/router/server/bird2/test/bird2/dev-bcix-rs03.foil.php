@@ -28,34 +28,23 @@
  *
  * http://www.gnu.org/licenses/gpl-2.0.html
  */
+
 ?>
 
-########################################################################################
-########################################################################################
-#
-# Route Server client configuration
-#
-########################################################################################
-########################################################################################
+<?= $this->insert('api/v4/router/server/bird2/header-rs03') ?>
 
+<?= $this->insert('api/v4/router/server/bird2/community-filtering-definitions-rs03') ?>
 
-template bgp tb_rsclient {
-    local as routeserverasn;
-    source address routeserveraddress;
-    strict bind yes;
+<?= $this->insert('api/v4/router/server/bird2/community-filter-rs03') ?>
 
-    # give RPKI-RTR a chance to start and populate
-    # (RPKI is /really/ quick)
-    connect delay time 30;
+<?= $this->insert('api/v4/router/server/bird2/rpki-rs03') ?>
 
-    <?= $t->ipproto ?> {
-        export all;
-        ###add-path support RFC7911###
-        add paths tx;
-<?php if( $t->router->protocol == 6 ): ?>
+<?= $this->insert('api/v4/router/server/bird2/filter-transit-networks-rs03') ?>
 
-<?php endif; ?>
-    };
+<?= $this->insert('api/v4/router/server/bird2/filter-bogon-asn-rs03') ?>
 
-    rs client;
-}
+<?= $this->insert('api/v4/router/server/bird2/neighbor-template-rs03', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
+
+<?= $this->insert('api/v4/router/server/bird2/neighbors-rs03', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
+
+<?= $this->insert('api/v4/router/server/bird2/footer-rs03') ?>
