@@ -31,20 +31,20 @@
 
 ?>
 
-<?= $this->insert('api/v4/router/server/bird2/header')   ?>
+<?= $this->insert('api/v4/router/server/bird2/header-rs03') ?>
 
-<?= $this->insert('api/v4/router/server/bird2/community-filtering-definitions')   ?>
+<?= $this->insert('api/v4/router/server/bird2/community-filtering-definitions-rs03') ?>
 
-<?= $this->insert('api/v4/router/server/bird2/community-filter')   ?>
+<?= $this->insert('api/v4/router/server/bird2/community-filter-rs03') ?>
 
-<?= $this->insert('api/v4/router/server/bird2/rpki')   ?>
+<?= $this->insert('api/v4/router/server/bird2/rpki-rs03') ?>
 
-<?= $this->insert('api/v4/router/server/bird2/filter-transit-networks')   ?>
+<?= $this->insert('api/v4/router/server/bird2/filter-transit-networks-rs03') ?>
 
-<?= $this->insert('api/v4/router/server/bird2/filter-bogon-asn')   ?>
+<?= $this->insert('api/v4/router/server/bird2/filter-bogon-asn-rs03') ?>
 
-<?= $this->insert('api/v4/router/server/bird2/neighbor-template', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] )   ?>
+<?= $this->insert('api/v4/router/server/bird2/neighbor-template-rs03', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
 
-<?= $this->insert('api/v4/router/server/bird2/neighbors-rs02', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
+<?= $this->insert('api/v4/router/server/bird2/neighbors-rs03', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
 
-<?= $this->insert('api/v4/router/server/bird2/footer')   ?>
+<?= $this->insert('api/v4/router/server/bird2/footer-rs03') ?>
