@@ -180,8 +180,6 @@ int set allas;
 
     allas = [ <?= $int['autsys'] ?> ];
 
-<?php   endif; ?>
-
     # Ensure origin ASN is in the neighbors AS-SET
     if !(bgp_path.last_nonaggregated ~ allas) then {
         bgp_large_community.add( IXP_LC_FILTERED_IRRDB_ORIGIN_AS_FILTERED );
@@ -235,8 +233,8 @@ int set allas;
     $afis = [];
     if( $int['irrdbfilter'] ?? true ):
 
-    if( $t->router->protocol == 4 ):
-        $afis = [4];
+        if( $t->router->protocol == 4 ):
+            $afis = [4];
         else:
             $afis = [4, 6];
         endif;
@@ -317,12 +315,18 @@ filter f_export_as<?= $int['autsys'] ?>
     accept;
 
 }
+<?php
+    endif; // if( !in_array( $asn_filters[ $int['autsys'] ] ) ):
+?>
+
 
 protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         description "AS<?= $int['autsys'] ?> - <?= $int['cname'] ?>";
         neighbor <?= $int['address'] ?> as <?= $int['autsys'] ?>;
         ipv4 {
+<?php if( $t->router->protocol == 6 ): ?>
             extended next hop on;
+<?php endif; ?>
             import table on;  # Automatic channel reloads based on RPKI changes
             import limit <?= $int['maxprefixes'] ?> action restart;
             import filter f_import_as<?= $int['autsys'] ?>;
