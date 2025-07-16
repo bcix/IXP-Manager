@@ -62,18 +62,16 @@ protocol device { }
 
 <?php if( $t->router->protocol == 6 ): ?>
 ipv6 table master6 sorted;
-<?php else: ?>
-ipv4 table master4 sorted;
 <?php endif; ?>
+ipv4 table master4 sorted;
 
 # This function excludes weird networks
 #  rfc1918, class D, class E, too long and too short prefixes
 function avoid_martians() -> bool
-prefix set martians;
+prefix set martians4;
+prefix set martians6;
 {
-<?php if( $t->router->protocol == 6 ): ?>
-
-        martians = [
+        martians6 = [
                 ::/0,                   # Default (can be advertised as a route in BGP to peers if desired)
                 ::/96,                  # IPv4-compatible IPv6 address - deprecated by RFC4291
                 ::/128,                 # Unspecified address
@@ -100,9 +98,7 @@ prefix set martians;
                 ff00::/8+               # Multicast
         ];
 
-<?php else:  /* excellent summary in rfc6890 Special-Purpose IP Address Registries */ ?>
-
-        martians = [
+        martians4 = [
                 0.0.0.0/32-,            # rfc5735 Special Use IPv4 Addresses
                 0.0.0.0/0{0,7},         # rfc1122 Requirements for Internet Hosts -- Communication Layers 3.2.1.3
                 10.0.0.0/8+,            # rfc1918 Address Allocation for Private Internets
@@ -119,12 +115,13 @@ prefix set martians;
                 224.0.0.0/4+,           # rfc1112 Host Extensions for IP Multicasting
                 240.0.0.0/4+            # rfc6890 Special-Purpose Address Registries
         ];
-
-<?php endif; ?>
-
         # Avoid RFC1918 and similar networks
-        if net ~ martians then
-                return false;
+        if net.type = NET_IP6 then
+                if net ~ martians6 then
+                        return false;
+        if net.type = NET_IP4 then
+                if net ~ martians4 then
+                        return false;
 
         return true;
 }
