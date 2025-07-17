@@ -321,35 +321,35 @@ filter f_export_as<?= $int['autsys'] ?>
 
 
 protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
-        description "AS<?= $int['autsys'] ?> - <?= $int['cname'] ?>";
-        neighbor <?= $int['address'] ?> as <?= $int['autsys'] ?>;
-        ipv4 {
+    description "AS<?= $int['autsys'] ?> - <?= $int['cname'] ?>";
+    neighbor <?= $int['address'] ?> as <?= $int['autsys'] ?>;
+    ipv4 {
 <?php if( $t->router->protocol == 6 ): ?>
-            extended next hop on;
+        extended next hop on;
 <?php endif; ?>
-            import table on;  # Automatic channel reloads based on RPKI changes
-            import limit <?= $int['maxprefixes'] ?> action restart;
-            import filter f_import_as<?= $int['autsys'] ?>;
-            export filter f_export_as<?= $int['autsys'] ?>;
-            import keep filtered on;
-        };
+        import table on;  # Automatic channel reloads based on RPKI changes
+        import limit <?= $int['maxprefixes'] ?> action restart;
+        import filter f_import_as<?= $int['autsys'] ?>;
+        export filter f_export_as<?= $int['autsys'] ?>;
+        import keep filtered on;
+    };
 <?php if( $t->router->protocol == 6 ): ?>
-        ipv6 {
-            import table on;  # Automatic channel reloads based on RPKI changes
-            import limit <?= $int['maxprefixes'] ?> action restart;
-            import filter f_import_as<?= $int['autsys'] ?>;
-            export filter f_export_as<?= $int['autsys'] ?>;
-            import keep filtered on;
-        };
+    ipv6 {
+        import table on;  # Automatic channel reloads based on RPKI changes
+        import limit <?= $int['maxprefixes'] ?> action restart;
+        import filter f_import_as<?= $int['autsys'] ?>;
+        export filter f_export_as<?= $int['autsys'] ?>;
+        import keep filtered on;
+    };
 <?php endif; ?>
 <?php if( $int['autsys'] != 212232 ): // bgp.tools collector needs active session setup ?>
-        passive on;
+    passive on;
 <?php endif; ?>
 <?php if( $t->router->rfc1997_passthru ): ?>
-        interpret communities off;  # enable rfc1997 well-known community pass through
+    interpret communities off;  # enable rfc1997 well-known community pass through
 <?php endif; ?>
 <?php if( $int['bgpmd5secret'] && !$t->router->skip_md5 ): ?>
-        password "<?= $int['bgpmd5secret'] ?>";
+    password "<?= $int['bgpmd5secret'] ?>";
 <?php endif; ?>
 }
 
