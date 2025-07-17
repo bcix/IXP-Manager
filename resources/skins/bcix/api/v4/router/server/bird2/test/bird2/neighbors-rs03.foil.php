@@ -91,12 +91,12 @@ int set allas;
 <?php if( $t->router->protocol == 6 ): ?>
     if ( net.type = NET_IP6 && net ~ [ ::/0{<?= config( 'ixp.irrdb.min_v6_subnet_size', 48 ) == 128 ? 128 : config( 'ixp.irrdb.min_v6_subnet_size', 48 ) + 1 ?>,128} ] ) then {
         bgp_large_community.add( IXP_LC_FILTERED_PREFIX_LEN_TOO_LONG );
-        reject "Prefix length too long [", net.len, "] - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] Prefix length too long [", net.len, "] - REJECTING ", net;
     }
 <?php endif; ?>
     if ( net.type = NET_IP4 && net ~ [ 0.0.0.0/0{<?= config( 'ixp.irrdb.min_v4_subnet_size', 24 ) == 32 ? 32 : config( 'ixp.irrdb.min_v4_subnet_size', 24 ) + 1 ?>,32} ] ) then {
         bgp_large_community.add( IXP_LC_FILTERED_PREFIX_LEN_TOO_LONG );
-        reject "Prefix length too long [", net.len, "] - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] Prefix length too long [", net.len, "] - REJECTING ", net;
     }
 
     #########
@@ -109,25 +109,25 @@ int set allas;
 <?php else: ?>
     if defined( bgp_otc ) then {
         bgp_large_community.add( IXP_LC_FILTERED_ROUTE_LEAK_DETECTED );
-        reject "Route leak detected RFC9234 [otc=", bgp_otc ,"] - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] Route leak detected RFC9234 [otc=", bgp_otc ,"] - REJECTING ", net;
     }
 <?php endif; ?>
 
     if !(avoid_martians()) then {
         bgp_large_community.add( IXP_LC_FILTERED_BOGON );
-        reject "An IP Bogon was detected - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] An IP Bogon was detected - REJECTING ", net;
     }
 
     # Belt and braces: must have at least one ASN in the path
     if( bgp_path.len < 1 ) then {
         bgp_large_community.add( IXP_LC_FILTERED_AS_PATH_TOO_SHORT );
-        reject "AS path too short [", bgp_path.len ,"] - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] AS path too short [", bgp_path.len ,"] - REJECTING ", net;
     }
 
     # Peer ASN == route's first ASN?
     if (bgp_path.first != <?= $int['autsys'] ?> ) then {
         bgp_large_community.add( IXP_LC_FILTERED_FIRST_AS_NOT_PEER_AS );
-        reject "First AS not peer AS [", bgp_path.first, "] - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] First AS not peer AS [", bgp_path.first, "] - REJECTING ", net;
     }
 
     # set of all IPs this ASN uses to peer with on this VLAN
@@ -142,21 +142,21 @@ int set allas;
         } else {
             # looks like hijacking (intentional or not)
             bgp_large_community.add( IXP_LC_FILTERED_NEXT_HOP_NOT_PEER_IP );
-            reject "Next hop not peer IP [", bgp_next_hop, "] - REJECTING ", net;
+            reject "[asn=", <?= $int['autsys'] ?>, "] Next hop not peer IP [", bgp_next_hop, "] - REJECTING ", net;
         }
     }
 
 
     # Filter Known Transit Networks
-    if filter_has_transit_path() then reject "transit-free ASN in AS-Path - REJECTING ", net;
+    if filter_has_transit_path() then reject "[asn=", <?= $int['autsys'] ?>, "] transit-free ASN in AS-Path - REJECTING ", net;
 
     # Filter Known Bogon as in path
-    if filter_has_bogon_as_path() then reject "AS path contains a bogon AS - REJECTING ", net;
+    if filter_has_bogon_as_path() then reject "[asn=", <?= $int['autsys'] ?>, "] AS path contains a bogon AS - REJECTING ", net;
 
     # Belt and braces: no one needs an ASN path with > 64 hops, that's just broken
     if( bgp_path.len > 64 ) then {
         bgp_large_community.add( IXP_LC_FILTERED_AS_PATH_TOO_LONG );
-        reject "AS path too long [", bgp_path.len ,"] - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] AS path too long [", bgp_path.len ,"] - REJECTING ", net;
     }
 
 
@@ -183,7 +183,7 @@ int set allas;
     # Ensure origin ASN is in the neighbors AS-SET
     if !(bgp_path.last_nonaggregated ~ allas) then {
         bgp_large_community.add( IXP_LC_FILTERED_IRRDB_ORIGIN_AS_FILTERED );
-        reject "Origin AS not in peer AS-SET - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] Origin AS not in peer AS-SET - REJECTING ", net;
     }
 
 <?php
@@ -196,7 +196,7 @@ int set allas;
         if( roa_check( t_roa4, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
             print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
             bgp_large_community.add( IXP_LC_FILTERED_RPKI_INVALID );
-            reject "Prefix is RPKI INVALID - REJECTING ", net;
+            reject "[asn=", <?= $int['autsys'] ?>, "] Prefix is RPKI INVALID - REJECTING ", net;
         }
 
         if( roa_check( t_roa4, net, bgp_path.last_nonaggregated ) = ROA_VALID ) then {
@@ -207,7 +207,7 @@ int set allas;
         if( roa_check( t_roa6, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
             print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
             bgp_large_community.add( IXP_LC_FILTERED_RPKI_INVALID );
-            reject "Prefix is RPKI INVALID - REJECTING ", net;
+            reject "[asn=", <?= $int['autsys'] ?>, "] Prefix is RPKI INVALID - REJECTING ", net;
         }
 
         if( roa_check( t_roa6, net, bgp_path.last_nonaggregated ) = ROA_VALID ) then {
@@ -255,7 +255,7 @@ int set allas;
     if net.type = NET_IP<?= $afi ?> && ! (net ~ allnet<?= $afi ?>) then {
         bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
         bgp_large_community.add( <?= $int['rsmorespecifics'] ? 'IXP_LC_INFO_IRRDB_FILTERED_LOOSE' : 'IXP_LC_INFO_IRRDB_FILTERED_STRICT' ?> );
-        reject "IRRDB Prefix not found in AS-SET - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] IRRDB Prefix not found in AS-SET - REJECTING ", net;
     } else {
         bgp_large_community.add( IXP_LC_INFO_IRRDB_VALID );
     }
@@ -266,7 +266,7 @@ int set allas;
         # Deny everything because the IRR database returned nothing
         bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
         bgp_large_community.add( IXP_LC_INFO_IRRDB_PREFIX_EMPTY );
-        reject "IRRDB Prefix not found in AS-SET, IRRDB Prefix is empty - REJECTING ", net;
+        reject "[asn=", <?= $int['autsys'] ?>, "] IRRDB Prefix not found in AS-SET, IRRDB Prefix is empty - REJECTING ", net;
     }
 
 <?php   endif; ?>
