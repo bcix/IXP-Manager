@@ -170,6 +170,7 @@ int set allas;
             $asns = array_merge($asns, IrrdbAggregator::asnsForRouterConfiguration( $int[ 'cid' ], 6 ));
         endif;
     $asns = array_unique(array_merge($asns, array($int['autsys'])));
+        if( count( $asns ) ):
 ?>
 
     allas = [ <?php echo $t->softwrap( $asns, 10, ", ", ",", 14, 7 ); ?>
@@ -180,14 +181,15 @@ int set allas;
 
     allas = [ <?= $int['autsys'] ?> ];
 
+<?php   endif; ?>
+
     # Ensure origin ASN is in the neighbors AS-SET
     if !(bgp_path.last_nonaggregated ~ allas) then {
         bgp_large_community.add( IXP_LC_FILTERED_IRRDB_ORIGIN_AS_FILTERED );
         reject "[asn=", <?= $int['autsys'] ?>, "] Origin AS not in peer AS-SET - REJECTING ", net;
     }
 
-<?php
-    endif; ?>
+<?php endif; ?>
 
 <?php if( $t->router->rpki && config( 'ixp.rpki.rtr1.host' ) ): ?>
 
