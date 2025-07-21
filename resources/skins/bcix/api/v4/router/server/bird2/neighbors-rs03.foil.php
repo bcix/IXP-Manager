@@ -252,12 +252,14 @@ int set allas;
 
     <?php unset( $prefixes ); ?>
 
-    if net.type = NET_IP<?= $afi ?> && ! (net ~ allnet<?= $afi ?>) then {
-        bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
-        bgp_large_community.add( <?= $int['rsmorespecifics'] ? 'IXP_LC_INFO_IRRDB_FILTERED_LOOSE' : 'IXP_LC_INFO_IRRDB_FILTERED_STRICT' ?> );
-        reject "[asn=", <?= $int['autsys'] ?>, "] IRRDB Prefix not found in AS-SET - REJECTING ", net;
-    } else {
-        bgp_large_community.add( IXP_LC_INFO_IRRDB_VALID );
+    if net.type = NET_IP<?= $afi ?> then {
+        if ! (net ~ allnet<?= $afi ?>) then {
+            bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
+            bgp_large_community.add( <?= $int['rsmorespecifics'] ? 'IXP_LC_INFO_IRRDB_FILTERED_LOOSE' : 'IXP_LC_INFO_IRRDB_FILTERED_STRICT' ?> );
+            reject "[asn=", <?= $int['autsys'] ?>, "] IRRDB Prefix not found in AS-SET - REJECTING ", net;
+        } else {
+            bgp_large_community.add( IXP_LC_INFO_IRRDB_VALID );
+        }
     }
 
 <?php   else: ?>
