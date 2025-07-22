@@ -189,6 +189,13 @@ int set allas;
         reject "[asn=", <?= $int['autsys'] ?>, "] Origin AS not in peer AS-SET - REJECTING ", net;
     }
 
+    # Ensure the bgp_path is in the neighbors AS-SET
+    for int asn_on_path in bgp_path do {
+        if !(asn_on_path ~ allas) then {
+            bgp_large_community.add( ( routeserverasn, 1900, asn_on_path ) );
+        }
+    }
+
 <?php endif; ?>
 
 <?php if( $t->router->rpki && config( 'ixp.rpki.rtr1.host' ) ): ?>
@@ -205,6 +212,7 @@ int set allas;
             bgp_large_community.add( IXP_LC_INFO_RPKI_VALID );
             accept;
         }
+<?php if( $t->router->protocol == 6 ): ?>
     } else {
         if( roa_check( t_roa6, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
             print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
@@ -216,6 +224,7 @@ int set allas;
             bgp_large_community.add( IXP_LC_INFO_RPKI_VALID );
             accept;
         }
+<?php endif; ?>
     }
 
     # RPKI unknown, keep checking and mark as unknown for info
