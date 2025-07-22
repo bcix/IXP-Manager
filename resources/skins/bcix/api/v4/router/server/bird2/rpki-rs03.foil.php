@@ -11,12 +11,16 @@
 <?php if( $t->router->rpki && config( 'ixp.rpki.rtr1.host' ) ): ?>
 
 roa4 table t_roa4;
+<?php if( $t->router->protocol == 6 ): ?>
 roa6 table t_roa6;
+<?php endif; ?>
 
 protocol rpki rpki1 {
 
     roa4 { table t_roa4; };
+<?php if( $t->router->protocol == 6 ): ?>
     roa6 { table t_roa6; };
+<?php endif; ?>
 
     remote "<?= config( 'ixp.rpki.rtr1.host' ) ?>" port <?= config( 'ixp.rpki.rtr1.port' ) ?>;
 
@@ -30,7 +34,9 @@ protocol rpki rpki1 {
 protocol rpki rpki2 {
 
     roa4 { table t_roa4; };
+<?php if( $t->router->protocol == 6 ): ?>
     roa6 { table t_roa6; };
+<?php endif; ?>
 
     remote "<?= config( 'ixp.rpki.rtr2.host' ) ?>" port <?= config( 'ixp.rpki.rtr2.port' ) ?>;
 
