@@ -142,7 +142,10 @@ int set allas;
         } else {
             # looks like hijacking (intentional or not)
             bgp_large_community.add( IXP_LC_FILTERED_NEXT_HOP_NOT_PEER_IP );
-            reject "[asn=", <?= $int['autsys'] ?>, "] Next hop not peer IP [", bgp_next_hop, "] - REJECTING ", net;
+            ###
+            # messages keep spamming the log
+            # reject "[asn=", <?= $int['autsys'] ?>, "] Next hop not peer IP [", bgp_next_hop, "] - REJECTING ", net;
+            reject;
         }
     }
 
