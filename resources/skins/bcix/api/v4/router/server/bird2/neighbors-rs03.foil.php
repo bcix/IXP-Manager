@@ -36,6 +36,7 @@
 
     // only define one filter per ASN
 use IXP\Models\Aggregators\IrrdbAggregator;
+use IXP\Models\Customer;
 
 $asn_filters = [];
 ?>
@@ -339,23 +340,39 @@ filter f_export_as<?= $int['autsys'] ?>
 protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
     description "AS<?= $int['autsys'] ?> - <?= $int['cname'] ?>";
     neighbor <?= $int['address'] ?> as <?= $int['autsys'] ?>;
+<?php if(
+        $t->router->protocol == 4 ||
+        ($t->router->protocol == 6 &&
+        !in_array('norfc8950', Customer::find($int['cid'])->tags()->pluck('tag')->toArray()))):
+        ?>
     ipv4 {
-<?php if( $t->router->protocol == 6 ): ?>
+<?php   if( $t->router->protocol == 6 ): ?>
         extended next hop on;
-<?php endif; ?>
+<?php   endif; ?>
+        table master4;
         import table on;  # Automatic channel reloads based on RPKI changes
         import limit <?= $int['maxprefixes'] ?> action restart;
         import filter f_import_as<?= $int['autsys'] ?>;
         export filter f_export_as<?= $int['autsys'] ?>;
         import keep filtered on;
+        export all;
+        ###add-path support RFC7911###
+        add paths tx;
     };
+<?php else: ?>
+    # RFC8950 disabled by tag norfc8950 in ixp-manager
+<?php endif; ?>
 <?php if( $t->router->protocol == 6 ): ?>
     ipv6 {
+        table master6;
         import table on;  # Automatic channel reloads based on RPKI changes
         import limit <?= $int['maxprefixes'] ?> action restart;
         import filter f_import_as<?= $int['autsys'] ?>;
         export filter f_export_as<?= $int['autsys'] ?>;
         import keep filtered on;
+        export all;
+        ###add-path support RFC7911###
+        add paths tx;
     };
 <?php endif; ?>
 <?php if( $int['autsys'] != 212232 ): // bgp.tools collector needs active session setup ?>

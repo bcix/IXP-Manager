@@ -48,23 +48,5 @@ template bgp tb_rsclient {
     # (RPKI is /really/ quick)
     connect delay time 30;
 
-    ipv4 {
-        table master4;
-
-        export all;
-        ###add-path support RFC7911###
-        add paths tx;
-    };
-<?php if( $t->router->protocol == 6 ): ?>
-
-    ipv6 {
-        table master6;
-
-        export all;
-        ###add-path support RFC7911###
-        add paths tx;
-    };
-<?php endif; ?>
-
     rs client;
 }
