@@ -36,6 +36,7 @@
 
     // only define one filter per ASN
 use IXP\Models\Aggregators\IrrdbAggregator;
+use IXP\Models\Customer;
 
 $asn_filters = [];
 ?>
@@ -62,9 +63,6 @@ $asn_filters = [];
 ###
 ### AS<?= $int['autsys'] ?> - <?= $int['cname'] ?> - VLAN Interface #<?= $int['vliid'] ?>
 
-
-<?= $t->ipproto ?> table t_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?>;
-
 <?php
     if( !in_array( $int['autsys'], $asn_filters ) ):
 
@@ -74,7 +72,10 @@ $asn_filters = [];
 
 filter f_import_as<?= $int['autsys'] ?>
 
-prefix set allnet;
+prefix set allnet4;
+<?php if( $t->router->protocol == 6 ): ?>
+prefix set allnet6;
+<?php endif; ?>
 ip set allips;
 int set allas;
 {
@@ -89,42 +90,45 @@ int set allas;
 
     # Filter small prefixes
 <?php if( $t->router->protocol == 6 ): ?>
-    if ( net ~ [ ::/0{<?= config( 'ixp.irrdb.min_v6_subnet_size', 48 ) == 128 ? 128 : config( 'ixp.irrdb.min_v6_subnet_size', 48 ) + 1 ?>,128} ] ) then {
-<?php else: ?>
-    if ( net ~ [ 0.0.0.0/0{<?= config( 'ixp.irrdb.min_v4_subnet_size', 24 ) == 32 ? 32 : config( 'ixp.irrdb.min_v4_subnet_size', 24 ) + 1 ?>,32} ] ) then {
-<?php endif; ?>
+    if ( net.type = NET_IP6 && net ~ [ ::/0{<?= config( 'ixp.irrdb.min_v6_subnet_size', 48 ) == 128 ? 128 : config( 'ixp.irrdb.min_v6_subnet_size', 48 ) + 1 ?>,128} ] ) then {
         bgp_large_community.add( IXP_LC_FILTERED_PREFIX_LEN_TOO_LONG );
-        accept;
+        reject "[asn=", <?= $int['autsys'] ?>, "] Prefix length too long [", net.len, "] - REJECTING ", net;
     }
-#########
-# RFC9234
-#########
+<?php endif; ?>
+    if ( net.type = NET_IP4 && net ~ [ 0.0.0.0/0{<?= config( 'ixp.irrdb.min_v4_subnet_size', 24 ) == 32 ? 32 : config( 'ixp.irrdb.min_v4_subnet_size', 24 ) + 1 ?>,32} ] ) then {
+        bgp_large_community.add( IXP_LC_FILTERED_PREFIX_LEN_TOO_LONG );
+        reject "[asn=", <?= $int['autsys'] ?>, "] Prefix length too long [", net.len, "] - REJECTING ", net;
+    }
+
+    #########
+    # RFC9234
+    #########
 <?php if( $int['autsys'] == 213973 ): // BCIX OUTREACH  ?>
-	if ! defined( bgp_otc ) then {
+    if ! defined( bgp_otc ) then {
         bgp_otc = 213973;
     }
 <?php else: ?>
-	if defined( bgp_otc ) then {
+    if defined( bgp_otc ) then {
         bgp_large_community.add( IXP_LC_FILTERED_ROUTE_LEAK_DETECTED );
+        reject "[asn=", <?= $int['autsys'] ?>, "] Route leak detected RFC9234 [otc=", bgp_otc ,"] - REJECTING ", net;
     }
 <?php endif; ?>
 
-
     if !(avoid_martians()) then {
         bgp_large_community.add( IXP_LC_FILTERED_BOGON );
-        accept;
+        reject "[asn=", <?= $int['autsys'] ?>, "] An IP Bogon was detected - REJECTING ", net;
     }
 
     # Belt and braces: must have at least one ASN in the path
     if( bgp_path.len < 1 ) then {
         bgp_large_community.add( IXP_LC_FILTERED_AS_PATH_TOO_SHORT );
-        accept;
+        reject "[asn=", <?= $int['autsys'] ?>, "] AS path too short [", bgp_path.len ,"] - REJECTING ", net;
     }
 
     # Peer ASN == route's first ASN?
     if (bgp_path.first != <?= $int['autsys'] ?> ) then {
         bgp_large_community.add( IXP_LC_FILTERED_FIRST_AS_NOT_PEER_AS );
-        accept;
+        reject "[asn=", <?= $int['autsys'] ?>, "] First AS not peer AS [", bgp_path.first, "] - REJECTING ", net;
     }
 
     # set of all IPs this ASN uses to peer with on this VLAN
@@ -139,30 +143,37 @@ int set allas;
         } else {
             # looks like hijacking (intentional or not)
             bgp_large_community.add( IXP_LC_FILTERED_NEXT_HOP_NOT_PEER_IP );
-            accept;
+            ###
+            # messages keep spamming the log
+            # reject "[asn=", <?= $int['autsys'] ?>, "] Next hop not peer IP [", bgp_next_hop, "] - REJECTING ", net;
+            reject;
         }
     }
 
 
     # Filter Known Transit Networks
-    if filter_has_transit_path() then accept;
+    if filter_has_transit_path() then reject "[asn=", <?= $int['autsys'] ?>, "] transit-free ASN in AS-Path - REJECTING ", net;
 
     # Filter Known Bogon as in path
-    if filter_has_bogon_as_path() then accept;
+    if filter_has_bogon_as_path() then reject "[asn=", <?= $int['autsys'] ?>, "] AS path contains a bogon AS - REJECTING ", net;
 
     # Belt and braces: no one needs an ASN path with > 64 hops, that's just broken
     if( bgp_path.len > 64 ) then {
         bgp_large_community.add( IXP_LC_FILTERED_AS_PATH_TOO_LONG );
-        accept;
+        reject "[asn=", <?= $int['autsys'] ?>, "] AS path too long [", bgp_path.len ,"] - REJECTING ", net;
     }
 
 
-        <?php
+<?php
     // Only do IRRDB ASN filtering if this is enabled per client:
     $asns = [];
     if( $int['irrdbfilter'] ?? true ):
 
-        $asns = IrrdbAggregator::asnsForRouterConfiguration( $int[ 'cid' ], $t->router->protocol );
+        $asns = IrrdbAggregator::asnsForRouterConfiguration( $int[ 'cid' ], 4 );
+        if( $t->router->protocol == 6 ):
+            $asns = array_merge($asns, IrrdbAggregator::asnsForRouterConfiguration( $int[ 'cid' ], 6 ));
+        endif;
+    $asns = array_unique(array_merge($asns, array($int['autsys'])));
         if( count( $asns ) ):
 ?>
 
@@ -179,16 +190,49 @@ int set allas;
     # Ensure origin ASN is in the neighbors AS-SET
     if !(bgp_path.last_nonaggregated ~ allas) then {
         bgp_large_community.add( IXP_LC_FILTERED_IRRDB_ORIGIN_AS_FILTERED );
-        accept;
+        reject "[asn=", <?= $int['autsys'] ?>, "] Origin AS not in peer AS-SET - REJECTING ", net;
     }
 
-<?php
-    endif; ?>
+    # Ensure the bgp_path is in the neighbors AS-SET
+    for int asn_on_path in bgp_path do {
+        if !(asn_on_path ~ allas) then {
+            bgp_large_community.add( ( routeserverasn, 1900, asn_on_path ) );
+        }
+    }
+
+<?php endif; ?>
 
 <?php if( $t->router->rpki && config( 'ixp.rpki.rtr1.host' ) ): ?>
 
-    # RPKI test - if it's INVALID or VALID, we are done
-    if filter_rpki() then accept;
+    # RPKI check
+    if net.type = NET_IP4 then {
+        if( roa_check( t_roa4, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
+            print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
+            bgp_large_community.add( IXP_LC_FILTERED_RPKI_INVALID );
+            reject "[asn=", <?= $int['autsys'] ?>, "] Prefix is RPKI INVALID - REJECTING ", net;
+        }
+
+        if( roa_check( t_roa4, net, bgp_path.last_nonaggregated ) = ROA_VALID ) then {
+            bgp_large_community.add( IXP_LC_INFO_RPKI_VALID );
+            accept;
+        }
+<?php if( $t->router->protocol == 6 ): ?>
+    } else {
+        if( roa_check( t_roa6, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
+            print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
+            bgp_large_community.add( IXP_LC_FILTERED_RPKI_INVALID );
+            reject "[asn=", <?= $int['autsys'] ?>, "] Prefix is RPKI INVALID - REJECTING ", net;
+        }
+
+        if( roa_check( t_roa6, net, bgp_path.last_nonaggregated ) = ROA_VALID ) then {
+            bgp_large_community.add( IXP_LC_INFO_RPKI_VALID );
+            accept;
+        }
+<?php endif; ?>
+    }
+
+    # RPKI unknown, keep checking and mark as unknown for info
+    bgp_large_community.add( IXP_LC_INFO_RPKI_UNKNOWN );
 
 <?php else: ?>
 
@@ -201,37 +245,49 @@ int set allas;
 <?php
     // Only do IRRDB prefix filtering if this is enabled per client:
     $prefixes = [];
+    $afis = [];
     if( $int['irrdbfilter'] ?? true ):
 
-	    $prefixes = IrrdbAggregator::prefixesForRouterConfiguration( $int[ 'cid' ], $t->router->protocol );
+        if( $t->router->protocol == 4 ):
+            $afis = [4];
+        else:
+            $afis = [4, 6];
+        endif;
+    foreach( $afis as $afi ):
+        $prefixes = IrrdbAggregator::prefixesForRouterConfiguration( $int[ 'cid' ], $afi );
 
             if( count( $prefixes ) ):
 
 ?>
 
-    allnet = [ <?php echo $t->softwrap( $int['rsmorespecifics']
-		? $t->bird()->prefixExactToLessSpecific( $prefixes, $t->router->protocol, config( 'ixp.irrdb.min_v' . $t->router->protocol . '_subnet_size' ) )
-            	: $prefixes, 4, ", ", ",", 15, $t->router->protocol === 6 ? 36 : 26 ); ?>
+    allnet<?= $afi ?> = [ <?php echo $t->softwrap( $int['rsmorespecifics']
+        ? $t->bird()->prefixExactToLessSpecific( $prefixes, $afi, config( 'ixp.irrdb.min_v' . $afi . '_subnet_size' ) )
+                : $prefixes, 4, ", ", ",", 15, $afi === 6 ? 36 : 26 ); ?>
     ];
 
     <?php unset( $prefixes ); ?>
 
-    if ! (net ~ allnet) then {
-        bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
-        bgp_large_community.add( <?= $int['rsmorespecifics'] ? 'IXP_LC_INFO_IRRDB_FILTERED_LOOSE' : 'IXP_LC_INFO_IRRDB_FILTERED_STRICT' ?> );
-        accept;
-    } else {
-        bgp_large_community.add( IXP_LC_INFO_IRRDB_VALID );
+    if net.type = NET_IP<?= $afi ?> then {
+        if ! (net ~ allnet<?= $afi ?>) then {
+            bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
+            bgp_large_community.add( <?= $int['rsmorespecifics'] ? 'IXP_LC_INFO_IRRDB_FILTERED_LOOSE' : 'IXP_LC_INFO_IRRDB_FILTERED_STRICT' ?> );
+            reject "[asn=", <?= $int['autsys'] ?>, "] IRRDB Prefix not found in AS-SET - REJECTING ", net;
+        } else {
+            bgp_large_community.add( IXP_LC_INFO_IRRDB_VALID );
+        }
     }
 
 <?php   else: ?>
 
-    # Deny everything because the IRR database returned nothing
-    bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
-    bgp_large_community.add( IXP_LC_INFO_IRRDB_PREFIX_EMPTY );
-    accept;
+    if net.type = NET_IP<?= $afi ?> then {
+        # Deny everything because the IRR database returned nothing
+        bgp_large_community.add( IXP_LC_FILTERED_IRRDB_PREFIX_FILTERED );
+        bgp_large_community.add( IXP_LC_INFO_IRRDB_PREFIX_EMPTY );
+        reject "[asn=", <?= $int['autsys'] ?>, "] IRRDB Prefix not found in AS-SET, IRRDB Prefix is empty - REJECTING ", net;
+    }
 
 <?php   endif; ?>
+<?php endforeach; ?>
 
 <?php else: ?>
 
@@ -259,6 +315,14 @@ filter f_export_as<?= $int['autsys'] ?>
     echo $t->insertif( 'api/v4/router/server/bird2/f_export_as' . $int['autsys'] );
 ?>
 
+    if ! (ixp_community_filter(<?= $int['autsys'] ?>) ) then reject;
+
+    if bgp_large_community ~ [( routeserverasn, 1101, * )] then reject;
+
+    #####Graceful BGP Session Shutdown####
+    if (65535, 0) ~ bgp_community then {
+        bgp_local_pref = 0;
+    }
 
     # we should strip our own communities which we used for the looking glass
     bgp_large_community.delete( [( routeserverasn, *, * )] );
@@ -268,42 +332,57 @@ filter f_export_as<?= $int['autsys'] ?>
     accept;
 
 }
-
-
-
-
-
-
-    <?php
+<?php
     endif; // if( !in_array( $asn_filters[ $int['autsys'] ] ) ):
 ?>
 
-protocol pipe pp_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> {
-        description "Pipe for AS<?= $int['autsys'] ?> - <?= $int['cname'] ?> - VLAN Interface <?= $int['vliid'] ?>";
-        table master<?= $t->router->protocol ?>;
-        peer table t_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?>;
-        import filter f_export_to_master;
-        export where ixp_community_filter(<?= $int['autsys'] ?>);
-}
 
 protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
-        description "AS<?= $int['autsys'] ?> - <?= $int['cname'] ?>";
-        neighbor <?= $int['address'] ?> as <?= $int['autsys'] ?>;
-        <?= $t->ipproto ?> {
-            import table on;  # Automatic channel reloads based on RPKI changes
-            import limit <?= $int['maxprefixes'] ?> action restart;
-            import filter f_import_as<?= $int['autsys'] ?>;
-            table t_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?>;
-            export filter f_export_as<?= $int['autsys'] ?>;
-        };
+    description "AS<?= $int['autsys'] ?> - <?= $int['cname'] ?>";
+    neighbor <?= $int['address'] ?> as <?= $int['autsys'] ?>;
+<?php if(
+        $t->router->protocol == 4 ||
+        ($t->router->protocol == 6 &&
+        !in_array('norfc8950', Customer::find($int['cid'])->tags()->pluck('tag')->toArray()))):
+        ?>
+    ipv4 {
+<?php   if( $t->router->protocol == 6 ): ?>
+        extended next hop on;
+<?php   endif; ?>
+        table master4;
+        import table on;  # Automatic channel reloads based on RPKI changes
+        import limit <?= $int['maxprefixes'] ?> action restart;
+        import filter f_import_as<?= $int['autsys'] ?>;
+        export filter f_export_as<?= $int['autsys'] ?>;
+        import keep filtered on;
+        export all;
+        ###add-path support RFC7911###
+        add paths tx;
+    };
+<?php else: ?>
+    # RFC8950 disabled by tag norfc8950 in ixp-manager
+<?php endif; ?>
+<?php if( $t->router->protocol == 6 ): ?>
+    ipv6 {
+        table master6;
+        import table on;  # Automatic channel reloads based on RPKI changes
+        import limit <?= $int['maxprefixes'] ?> action restart;
+        import filter f_import_as<?= $int['autsys'] ?>;
+        export filter f_export_as<?= $int['autsys'] ?>;
+        import keep filtered on;
+        export all;
+        ###add-path support RFC7911###
+        add paths tx;
+    };
+<?php endif; ?>
 <?php if( $int['autsys'] != 212232 ): // bgp.tools collector needs active session setup ?>
-        passive on;
+    passive on;
 <?php endif; ?>
 <?php if( $t->router->rfc1997_passthru ): ?>
-        interpret communities off;  # enable rfc1997 well-known community pass through
+    interpret communities off;  # enable rfc1997 well-known community pass through
 <?php endif; ?>
 <?php if( $int['bgpmd5secret'] && !$t->router->skip_md5 ): ?>
-        password "<?= $int['bgpmd5secret'] ?>";
+    password "<?= $int['bgpmd5secret'] ?>";
 <?php endif; ?>
 }
 
