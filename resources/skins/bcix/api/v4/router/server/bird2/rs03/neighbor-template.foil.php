@@ -28,23 +28,25 @@
  *
  * http://www.gnu.org/licenses/gpl-2.0.html
  */
-
 ?>
 
-<?= $this->insert('api/v4/router/server/bird2/header-rs01')   ?>
+########################################################################################
+########################################################################################
+#
+# Route Server client configuration
+#
+########################################################################################
+########################################################################################
 
-<?= $this->insert('api/v4/router/server/bird2/community-filtering-definitions-rs01')   ?>
 
-<?= $this->insert('api/v4/router/server/bird2/community-filter-rs01')   ?>
+template bgp tb_rsclient {
+    local as routeserverasn;
+    source address routeserveraddress;
+    strict bind yes;
 
-<?= $this->insert('api/v4/router/server/bird2/rpki-rs01')   ?>
+    # give RPKI-RTR a chance to start and populate
+    # (RPKI is /really/ quick)
+    connect delay time 30;
 
-<?= $this->insert('api/v4/router/server/bird2/filter-transit-networks-rs01')   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/filter-bogon-asn-rs01')   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/neighbor-template-rs01', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] )   ?>
-
-<?= $this->insert('api/v4/router/server/bird2/neighbors-rs01', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
-
-<?= $this->insert('api/v4/router/server/bird2/footer-rs01')   ?>
+    rs client;
+}
