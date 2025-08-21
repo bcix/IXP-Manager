@@ -355,7 +355,6 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         import filter f_import_as<?= $int['autsys'] ?>;
         export filter f_export_as<?= $int['autsys'] ?>;
         import keep filtered on;
-        export all;
         ###add-path support RFC7911###
         add paths tx;
     };
@@ -370,7 +369,6 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         import filter f_import_as<?= $int['autsys'] ?>;
         export filter f_export_as<?= $int['autsys'] ?>;
         import keep filtered on;
-        export all;
         ###add-path support RFC7911###
         add paths tx;
     };
