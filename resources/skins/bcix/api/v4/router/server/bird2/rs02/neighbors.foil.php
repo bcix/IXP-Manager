@@ -373,9 +373,7 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         add paths tx;
     };
 <?php endif; ?>
-<?php if( $int['autsys'] != 212232 ): // bgp.tools collector needs active session setup ?>
     passive on;
-<?php endif; ?>
 <?php if( $t->router->rfc1997_passthru ): ?>
     interpret communities off;  # enable rfc1997 well-known community pass through
 <?php endif; ?>
