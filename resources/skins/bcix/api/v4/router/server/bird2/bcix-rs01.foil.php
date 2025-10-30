@@ -47,4 +47,6 @@
 
 <?= $this->insert('api/v4/router/server/bird2/rs01/neighbors', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
 
+<?= $this->insert('api/v4/router/server/bird2/rs01/rfc8950-translator', [ 'ipproto' => $t->router->protocol == 6 ? 'ipv6' : 'ipv4' ] ) ?>
+
 <?= $this->insert('api/v4/router/server/bird2/rs01/footer') ?>
