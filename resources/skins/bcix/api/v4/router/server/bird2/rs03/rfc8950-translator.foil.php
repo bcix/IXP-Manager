@@ -15,7 +15,10 @@ use IXP\Models\IPv6Address;
 ### AS4200008950 - BCIX RFC8950 translator01 - VLAN Interface #<?= $vlan_intf_id ?>
 
 filter f_export_as4200008950 {
-    if ! (ixp_community_filter( 4200008950 ) ) then reject;
+    if (routeserverasn, 0, 0) ~ bgp_large_community then
+        reject;
+    if (0, routeserverasn) ~ bgp_community then
+        reject;
 
     if bgp_large_community ~ [( routeserverasn, 1101, * )] then reject;
 
