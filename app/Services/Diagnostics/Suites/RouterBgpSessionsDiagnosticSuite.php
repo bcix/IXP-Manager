@@ -107,6 +107,8 @@ class RouterBgpSessionsDiagnosticSuite extends DiagnosticSuite
                         continue;
                     }
 
+                    $this->results->add( $this->protocolStatus( $this->vli, $this->protocol, $router, $this->lg[ $router->handle ] ) );
+
                 } catch( \Exception $e) {
 
                     $this->results->add(new DiagnosticResult(
