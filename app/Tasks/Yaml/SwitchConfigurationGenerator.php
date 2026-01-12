@@ -92,7 +92,7 @@ class SwitchConfigurationGenerator
 
             // don't emit ports which aren't ready for production
             if( $pi->statusAwaitingXConnect() ) {
-                continue;
+            //    continue; we need the ports for automation!
             }
 
             if( ( $sp->typeUnset() || $sp->typePeering() ) && !in_array( $pi->virtualinterfaceid, $visProcessed )  ) {
@@ -118,6 +118,8 @@ class SwitchConfigurationGenerator
         $p                       = [];
         $p['type']               = 'edge';
         $p['description']        = $vi->customer->abbreviatedName;
+        $p['customer']           = $vi->customer->toArray();
+        $p['virtualinterfacedescription']   = $vi->description;
         $p['dot1q']              = $vi->trunk;
         $p['virtualinterfaceid'] = $vi->id;
         $p['lagframing']         = $vi->lag_framing;
@@ -156,6 +158,21 @@ class SwitchConfigurationGenerator
 
         // we now have the base port config. If this is not a LAG, just return it:
         if( !$vi->lag_framing ) {
+            if( $vi->physicalInterfaces()->count() > 1 ){
+                foreach( $vi->physicalInterfaces as $pi ) {
+                    // skip interfaces not on this switch
+                    if( $this->switch->id != $pi->switchPort->switcher->id ) {
+                        continue;
+                    }
+                    $p['shutdown']           = !$pi->isConnectedOrQuarantine();
+                    $p['status']             = $pi->apiStatus();
+                    $p['name']               = $pi->switchPort->ifName;
+                    $p['speed']              = $pi->speed;
+                    $p['rate_limit']         = $pi->rate_limit;
+                    $p['autoneg']            = $pi->autoneg;
+                    return [ $p ];
+                }
+            }
             /** @var PhysicalInterface $pi */
             $pi = $vi->physicalInterfaces()->first();
             $p['shutdown']           = !$pi->isConnectedOrQuarantine();
@@ -181,6 +198,10 @@ class SwitchConfigurationGenerator
         // build up list of physical ports associated with this lag master
         foreach( $vi->physicalInterfaces as $pi ) {
             if( !$pi->switchPort ) {
+                continue;
+            }
+            // skip interfaces not on this switch
+            if ($this->switch->id != $pi->switchPort->switcher->id) {
                 continue;
             }
             $p[ 'lagmembers' ][] = $pi->switchPort->ifName;
@@ -211,6 +232,10 @@ class SwitchConfigurationGenerator
         // interface definitions:
         foreach( $vi->physicalInterfaces as $pi ) {
             if( !$pi->switchPort ) {
+                continue;
+            }
+            // skip interfaces not on this switch
+            if ($this->switch->id != $pi->switchPort->switcher->id) {
                 continue;
             }
             $p['shutdown']   = !$pi->isConnectedOrQuarantine();
@@ -320,7 +345,7 @@ class SwitchConfigurationGenerator
             if( !$_pi->switchPort ) {
                 continue;
             }
-            $p['shutdown']   = !$pi->isConnectedOrQuarantine();
+            $p['shutdown']   = !$_pi->isConnectedOrQuarantine();
             $p['name']       = $_pi->switchPort->ifName;
             $p['lagmaster']  = false;
             $p['autoneg']    = $_pi->autoneg;
