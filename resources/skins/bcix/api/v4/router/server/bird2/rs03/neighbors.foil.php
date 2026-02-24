@@ -70,23 +70,28 @@ $asn_filters = [];
 ?>
 
 
-filter f_import_as<?= $int['autsys'] ?>
-
-prefix set allnet4;
-<?php if( $t->router->protocol == 6 ): ?>
-prefix set allnet6;
-<?php endif; ?>
-ip set allips;
-int set allas;
+filter f_import_as<?= $int['autsys'] . "\n" ?>
 {
+    prefix set allnet4;
+<?php if( $t->router->protocol == 6 ): ?>
+    prefix set allnet6;
+<?php endif; ?>
+    ip set allips;
+    int set allas;
 
 <?php
+    // IXP Manager UI based filters:
+    echo $t->insert( 'api/v4/router/server/bird2/f_ui_import', [ 'int' => $int ] );
+
     // We allow per customer AS headers here which IXPs can define as skinned files.
     // For example, to solve a Facebook issue, INEX created the following:
     //     resources/skins/inex/api/v4/router/server/bird2/f_import_as32934.foil.php
     echo $t->insertif( 'api/v4/router/server/bird2/f_import_as' . $int['autsys'] );
 
 ?>
+
+    # RFC 8326 - facilitate Graceful BGP Session Shutdown
+    if (65535, 0) ~ bgp_community then bgp_local_pref = 0;
 
     # Filter small prefixes
 <?php if( $t->router->protocol == 6 ): ?>
@@ -168,7 +173,6 @@ int set allas;
     // Only do IRRDB ASN filtering if this is enabled per client:
     $asns = [];
     if( $int['irrdbfilter'] ?? true ):
-
         $asns = IrrdbAggregator::asnsForRouterConfiguration( $int[ 'cid' ], 4 );
         if( $t->router->protocol == 6 ):
             $asns = array_merge($asns, IrrdbAggregator::asnsForRouterConfiguration( $int[ 'cid' ], 6 ));
@@ -206,25 +210,25 @@ int set allas;
 
     # RPKI check
     if net.type = NET_IP4 then {
-        if( roa_check( t_roa4, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
+        if( roa_check( t_roa4 ) = ROA_INVALID ) then {
             print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
             bgp_large_community.add( IXP_LC_FILTERED_RPKI_INVALID );
             reject "[asn=", <?= $int['autsys'] ?>, "] Prefix is RPKI INVALID - REJECTING ", net;
         }
 
-        if( roa_check( t_roa4, net, bgp_path.last_nonaggregated ) = ROA_VALID ) then {
+        if( roa_check( t_roa4 ) = ROA_VALID ) then {
             bgp_large_community.add( IXP_LC_INFO_RPKI_VALID );
             accept;
         }
 <?php if( $t->router->protocol == 6 ): ?>
     } else {
-        if( roa_check( t_roa6, net, bgp_path.last_nonaggregated ) = ROA_INVALID ) then {
+        if( roa_check( t_roa6 ) = ROA_INVALID ) then {
             print "Tagging invalid ROA ", net, " for ASN ", bgp_path.last;
             bgp_large_community.add( IXP_LC_FILTERED_RPKI_INVALID );
             reject "[asn=", <?= $int['autsys'] ?>, "] Prefix is RPKI INVALID - REJECTING ", net;
         }
 
-        if( roa_check( t_roa6, net, bgp_path.last_nonaggregated ) = ROA_VALID ) then {
+        if( roa_check( t_roa6 ) = ROA_VALID ) then {
             bgp_large_community.add( IXP_LC_INFO_RPKI_VALID );
             accept;
         }
@@ -381,6 +385,7 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
 <?php endif; ?>
 <?php if( $int['bgpmd5secret'] && !$t->router->skip_md5 ): ?>
     password "<?= $int['bgpmd5secret'] ?>";
+    authentication md5;
 <?php endif; ?>
 }
 
