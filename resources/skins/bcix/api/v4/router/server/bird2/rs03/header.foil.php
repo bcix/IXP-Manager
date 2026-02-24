@@ -74,6 +74,7 @@ prefix set martians6;
 <?php endif; ?>
 {
 <?php if( $t->router->protocol == 6 ): ?>
+
         martians6 = [
                 ::/0,                   # Default (can be advertised as a route in BGP to peers if desired)
                 ::/96,                  # IPv4-compatible IPv6 address - deprecated by RFC4291
@@ -101,6 +102,7 @@ prefix set martians6;
                 ff00::/8+               # Multicast
         ];
 <?php endif; ?>
+
 
         martians4 = [
                 0.0.0.0/32-,            # rfc5735 Special Use IPv4 Addresses
