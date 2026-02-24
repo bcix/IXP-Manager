@@ -47,4 +47,5 @@ protocol bgp pb_0480_as4200008950 from tb_rsclient {
     passive on;
     interpret communities off;  # enable rfc1997 well-known community pass through
     password "6TUshwN6BdTR";
+    authentication md5;
 }
