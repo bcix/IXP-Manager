@@ -47,8 +47,8 @@ timeformat log          iso long;
 timeformat protocol     iso long;
 timeformat route        iso long;
 
-
-log "/var/log/bird/<?= $t->handle ?>.log" all;
+# limit local logs to 100M
+log "/var/log/bird/<?= $t->handle ?>.log" 104857600 "/var/log/bird/<?= $t->handle ?>.log_old" all;
 log syslog name "bird-<?= $t->handle ?>" all;
 
 define routeserverasn     = <?= $t->router->asn ?>;
