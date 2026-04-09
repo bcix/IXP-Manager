@@ -198,10 +198,16 @@ filter f_import_as<?= $int['autsys'] . "\n" ?>
     }
 
     # Ensure the bgp_path is in the neighbors AS-SET
+    bool intermediate_outside_cone = false;
     for int asn_on_path in bgp_path do {
         if !(asn_on_path ~ allas) then {
             bgp_large_community.add( ( routeserverasn, 1900, asn_on_path ) );
+            intermediate_outside_cone = true;
         }
+    }
+    if (intermediate_outside_cone) then {
+            bgp_large_community.add( IXP_LC_FILTERED_INTERMEDIATE_AS_OUTSIDE_CONE );
+            reject "[asn=", <?= $int['autsys'] ?>, "] Intermediate AS on path not in peer AS-SET - REJECTING ", net;
     }
 
 <?php endif; ?>

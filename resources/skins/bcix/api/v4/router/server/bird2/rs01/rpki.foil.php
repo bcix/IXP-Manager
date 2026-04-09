@@ -23,10 +23,9 @@ protocol rpki rpki1 {
 <?php endif; ?>
 
     remote "<?= config( 'ixp.rpki.rtr1.host' ) ?>" port <?= config( 'ixp.rpki.rtr1.port' ) ?>;
+<?php if( config( 'ixp.rpki.rtr1.min_version' ) !== null ) { echo "    min version " . (int)config( 'ixp.rpki.rtr1.min_version' ) . ";\n"; } ?>
+<?php if( config( 'ixp.rpki.rtr1.max_version' ) !== null ) { echo "    max version " . (int)config( 'ixp.rpki.rtr1.max_version' ) . ";\n"; } ?>
 
-    retry keep 90;
-    refresh keep 900;
-    expire keep 172800;
 }
 
 <?php if( config( 'ixp.rpki.rtr2.host' ) ): ?>
@@ -39,10 +38,9 @@ protocol rpki rpki2 {
 <?php endif; ?>
 
     remote "<?= config( 'ixp.rpki.rtr2.host' ) ?>" port <?= config( 'ixp.rpki.rtr2.port' ) ?>;
+<?php if( config( 'ixp.rpki.rtr2.min_version' ) !== null ) { echo "    min version " . (int)config( 'ixp.rpki.rtr2.min_version' ) . ";\n"; } ?>
+<?php if( config( 'ixp.rpki.rtr2.max_version' ) !== null ) { echo "    max version " . (int)config( 'ixp.rpki.rtr2.max_version' ) . ";\n"; } ?>
 
-    retry keep 90;
-    refresh keep 900;
-    expire keep 172800;
 }
 
 <?php endif; /* rtr2 */ ?>
