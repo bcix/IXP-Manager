@@ -61,4 +61,5 @@ protocol bgp pb_<?= $formatted_vlan_intf_id ?>_as4200008950 from tb_rsclient {
 <?php   else: ?>
     password "<?= $vlan_interface['ipv4bgpmd5secret'] ?>";
 <?php   endif; ?>
+    authentication md5;
 }
