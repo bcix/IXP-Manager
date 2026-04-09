@@ -50,6 +50,8 @@ function ixp_community_filter(int peerasn) -> bool
     if ( peerasn != 213973 && ! defined( bgp_otc )) then {
         bgp_otc = routeserverasn;
     }
+
+<?php if( $t->router->bgp_lc ): ?>
     # AS path prepending
     if (routeserverasn, 103, peerasn) ~ bgp_large_community then {
         bgp_path.prepend( bgp_path.first );
@@ -60,10 +62,18 @@ function ixp_community_filter(int peerasn) -> bool
         bgp_path.prepend( bgp_path.first );
     } else if (routeserverasn, 101, peerasn) ~ bgp_large_community then {
         bgp_path.prepend( bgp_path.first );
+    } else if (routeserverasn, 103, 0) ~ bgp_large_community then {
+        bgp_path.prepend( bgp_path.first );
+        bgp_path.prepend( bgp_path.first );
+        bgp_path.prepend( bgp_path.first );
+    } else if (routeserverasn, 102, 0) ~ bgp_large_community then {
+        bgp_path.prepend( bgp_path.first );
+        bgp_path.prepend( bgp_path.first );
+    } else if (routeserverasn, 101, 0) ~ bgp_large_community then {
+        bgp_path.prepend( bgp_path.first );
     }
 
 
-<?php if( $t->router->bgp_lc ): ?>
     # support for BGP Large Communities
     if (routeserverasn, 0, peerasn) ~ bgp_large_community then
             return false;
@@ -75,17 +85,20 @@ function ixp_community_filter(int peerasn) -> bool
             return true;
 
 <?php endif; ?>
-    # it's unwise to conduct a 32-bit check on a 16-bit value
-    if routeserverasn > 65535 || peerasn > 65535 then
-            return true;
-
+<?php if( $t->router->asn <= 65535 ): ?>
     # Implement widely used community filtering schema.
-    if (0, peerasn) ~ bgp_community then
-            return false;
-    if (routeserverasn, peerasn) ~ bgp_community then
-            return true;
+    
+    # it's unwise to conduct a 32-bit check on a 16-bit value
+    if peerasn <= 65535 then {
+            if (0, peerasn) ~ bgp_community then
+                    return false;
+            if (routeserverasn, peerasn) ~ bgp_community then
+                    return true;
+    }
     if (0, routeserverasn) ~ bgp_community then
             return false;
 
+<?php endif; ?>
     return true;
 }
+

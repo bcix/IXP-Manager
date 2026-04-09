@@ -4,11 +4,12 @@
 ###
 ### AS4200008950 - BCIX RFC8950 translator01 - VLAN Interface #480
 
-filter f_export_as4200008950{
+filter f_export_as4200008950 {
     if (routeserverasn, 0, 0) ~ bgp_large_community then
         reject;
     if (0, routeserverasn) ~ bgp_community then
         reject;
+
     if bgp_large_community ~ [( routeserverasn, 1101, * )] then reject;
 
     #####Graceful BGP Session Shutdown####
@@ -18,7 +19,7 @@ filter f_export_as4200008950{
     accept;
 }
 
-filter f_import_as4200008950{
+filter f_import_as4200008950 {
     bgp_path.delete( 4200008950 );
     accept;
 }
@@ -46,4 +47,5 @@ protocol bgp pb_0480_as4200008950 from tb_rsclient {
     passive on;
     interpret communities off;  # enable rfc1997 well-known community pass through
     password "6TUshwN6BdTR";
+    authentication md5;
 }
