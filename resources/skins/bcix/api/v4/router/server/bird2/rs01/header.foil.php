@@ -47,9 +47,9 @@ timeformat log          iso long;
 timeformat protocol     iso long;
 timeformat route        iso long;
 
-
-log "/var/log/bird/<?= $t->handle ?>.log" all;
-log syslog all;
+# limit local logs to 100M
+log "/var/log/bird/<?= $t->handle ?>.log" 104857600 "/var/log/bird/<?= $t->handle ?>.log_old" all;
+log syslog name "bird-<?= $t->handle ?>" all;
 
 define routeserverasn     = <?= $t->router->asn ?>;
 define routeserveraddress = <?= $t->router->peering_ip ?>;
@@ -68,14 +68,10 @@ ipv4 table master4 sorted;
 # This function excludes weird networks
 #  rfc1918, class D, class E, too long and too short prefixes
 function avoid_martians() -> bool
-prefix set martians4;
-<?php if( $t->router->protocol == 6 ): ?>
-prefix set martians6;
-<?php endif; ?>
 {
 <?php if( $t->router->protocol == 6 ): ?>
 
-        martians6 = [
+        prefix set martians6 = [
                 ::/0,                   # Default (can be advertised as a route in BGP to peers if desired)
                 ::/96,                  # IPv4-compatible IPv6 address - deprecated by RFC4291
                 ::/128,                 # Unspecified address
@@ -104,7 +100,7 @@ prefix set martians6;
 <?php endif; ?>
 
 
-        martians4 = [
+        prefix set martians4 = [
                 0.0.0.0/32-,            # rfc5735 Special Use IPv4 Addresses
                 0.0.0.0/0{0,7},         # rfc1122 Requirements for Internet Hosts -- Communication Layers 3.2.1.3
                 10.0.0.0/8+,            # rfc1918 Address Allocation for Private Internets
