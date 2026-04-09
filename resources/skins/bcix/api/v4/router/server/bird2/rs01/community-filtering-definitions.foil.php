@@ -34,6 +34,8 @@ define IXP_LC_FILTERED_TOO_MANY_COMMUNITIES     = ( routeserverasn, 1101, 15 );
 
 # to filter route leaks according to RFC9234
 define IXP_LC_FILTERED_ROUTE_LEAK_DETECTED      = ( routeserverasn, 1101, 50 );
+# to filter bgp_paths with intermediate AS outside AS cone
+define IXP_LC_FILTERED_INTERMEDIATE_AS_OUTSIDE_CONE    = ( routeserverasn, 1101, 55 );
 
 
 
