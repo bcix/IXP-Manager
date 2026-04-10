@@ -199,8 +199,11 @@ filter f_import_as<?= $int['autsys'] . "\n" ?>
 
     # Ensure the bgp_path is in the neighbors AS-SET
     bool intermediate_outside_cone = false;
+    bool nonaggregated = true;
     for int asn_on_path in bgp_path do {
-        if !(asn_on_path ~ allas) then {
+        if (asn_on_path = bgp_path.last_nonaggregated) then 
+            nonaggregated = false;
+        if (nonaggregated && !(asn_on_path ~ allas)) then {
             bgp_large_community.add( ( routeserverasn, 1900, asn_on_path ) );
             intermediate_outside_cone = true;
         }
