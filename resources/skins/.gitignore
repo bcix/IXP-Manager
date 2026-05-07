@@ -3,3 +3,10 @@
 !/example
 !/inex
 !/placeholder
+!bcix/
+!bcix/api/
+!bcix/api/v4/
+!bcix/api/v4/router/
+!bcix/api/v4/router/server/
+!bcix/api/v4/router/server/bird2/
+!bcix/api/v4/router/server/bird2/*
