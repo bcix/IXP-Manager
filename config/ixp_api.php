@@ -142,7 +142,7 @@ return [
         ],
 
         'prefix' => [
-            'host' => env( 'IXP_API_WHOIS_PREFIX_HOST', 'whois.radb.net' ),
+            'host' => env( 'IXP_API_WHOIS_PREFIX_HOST', 'bgp.tools' ),
             'port' => env( 'IXP_API_WHOIS_PREFIX_PORT', 43 ),
         ],
     ],
@@ -163,9 +163,11 @@ return [
     |
     | IXP Manager v7.1.0 introduced an admin/ prepend on APIs for securing them.
     |
+    | The default was switched from true to false in v7.2.0.
+    |
     | See: https://docs.ixpmanager.org/install/security/
     */
 
-    'unsecured_api_access' => env( 'UNSECURED_API_ACCESS', true ),
+    'unsecured_api_access' => env( 'UNSECURED_API_ACCESS', false ),
 
 ];

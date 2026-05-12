@@ -31,6 +31,8 @@
 
     $( '.btn-edit-notes' ).click( function(e) {
         e.preventDefault();
+        let tab = $( this ).attr( 'data-notes-target' );
+        $('li > a[href="' + tab + '"]').tab("show");
         popup( $( this ).attr( 'data-object-id' ), 'edit-notes', $( this ).attr( 'href' ), false );
     });
 
@@ -105,9 +107,9 @@
 
         let html = `<form id="form-delete" method="POST" action="${url}">
                         <div>Do you really want to split this port?</div></br>
-                        <div>The slave port (${slavePort}) will be removed from the master port (${masterPort})
-                        and marked as available. If you want to split the other way (${slavePort} as master),
-                        split now and then use the move function on (${masterPort}) afterwards.</div>
+                        <div>The slave port (${htmlEntities(slavePort)}) will be removed from the master port (${htmlEntities(masterPort)})
+                        and marked as available. If you want to split the other way (${htmlEntities(slavePort)} as master),
+                        split now and then use the move function on (${htmlEntities(masterPort)}) afterwards.</div>
                         <input type="hidden" name="_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="_method" value="put" />
                     </form>`;
@@ -161,7 +163,7 @@
      * Calls an API endpoint on IXP Manager to get patch panel port details
      */
     function ajaxGetPatchPanelPort( pppid, action, url, handleData ) {
-        return $.ajax( "<?= url('api/v4/patch-panel-port/deep') ?>/" + pppid )
+        return $.ajax( "<?= url('admin/api/v4/patch-panel-port/deep') ?>/" + pppid )
             .done( function( data ) {
                 handleData( data, action, url );
             })
@@ -301,7 +303,7 @@
     }
 
     function setNotes( ppp, action, url ){
-        $.ajax( "<?= url('patch-panel-port/notes')?>/" + ppp.id, {
+        $.ajax( "<?= url('admin/patch-panel-port/notes')?>/" + ppp.id, {
             data: {
                 pppId: ppp.id,
                 notes: $( '#notes-modal-body-public-notes' ).val(),
@@ -458,7 +460,7 @@
     function deleteFile( e ) {
         let pppfid = $( this ).attr( 'data-object-id' );
 
-        $.ajax( "<?= url('patch-panel-port/file/delete/') ?>/" + pppfid, {
+        $.ajax( "<?= url('admin/patch-panel-port/file/delete/') ?>/" + pppfid, {
             type : 'delete',
             data: {
                 jsonResponse: 1,
@@ -481,7 +483,7 @@
     function toggleFilePrivacy( e ) {
         let pppfid = $( this ).attr( 'data-object-id' );
 
-        $.ajax( "<?= url('patch-panel-port/file/toggle-privacy') ?>/" + pppfid ,{
+        $.ajax( "<?= url('admin/patch-panel-port/file/toggle-privacy') ?>/" + pppfid ,{
             type: 'POST'
         })
             .done( function( data ) {
