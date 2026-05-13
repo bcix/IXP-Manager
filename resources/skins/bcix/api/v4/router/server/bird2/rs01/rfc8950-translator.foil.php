@@ -46,6 +46,7 @@ protocol bgp pb_<?= $formatted_vlan_intf_id ?>_as4200008950 from tb_rsclient {
         extended next hop on;
 <?php   endif; ?>
         table master4;
+        secondary;
         import table on;  # Automatic channel reloads based on RPKI changes
         import limit 200000 action restart;
         import filter f_import_as4200008950;
