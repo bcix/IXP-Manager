@@ -363,6 +363,7 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         extended next hop on;
 <?php   endif; ?>
         table master4;
+        secondary;
         import table on;  # Automatic channel reloads based on RPKI changes
         import limit <?= (Customer::find($int['cid'])->maxprefixes ?? config('ixp.default_maxprefixes.v4')) ?> action restart;
         import filter f_import_as<?= $int['autsys'] ?>;
@@ -377,6 +378,7 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
 <?php if( $t->router->protocol == 6 ): ?>
     ipv6 {
         table master6;
+        secondary;
         import table on;  # Automatic channel reloads based on RPKI changes
         import limit <?= (Customer::find($int['cid'])->maxprefixesv6 ?? config('ixp.default_maxprefixes.v6')) ?> action restart;
         import filter f_import_as<?= $int['autsys'] ?>;
