@@ -371,6 +371,7 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         import keep filtered on;
         ###add-path support RFC7911###
         add paths tx;
+        ignore otc;
     };
 <?php else: ?>
     # RFC8950 disabled by tag norfc8950 in ixp-manager
@@ -386,6 +387,7 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
         import keep filtered on;
         ###add-path support RFC7911###
         add paths tx;
+        ignore otc;
     };
 <?php endif; ?>
 <?php if( $int['autsys'] != 212232 ): // bgp.tools collector needs active session setup ?>
@@ -397,6 +399,9 @@ protocol bgp pb_<?= $int['fvliid'] ?>_as<?= $int['autsys'] ?> from tb_rsclient {
 <?php if( $int['bgpmd5secret'] && !$t->router->skip_md5 ): ?>
     password "<?= $int['bgpmd5secret'] ?>";
     authentication md5;
+<?php endif; ?>
+<?php if( $int['autsys'] != 213973 && $int['autsys'] != 4200008950 ): // BCIX OUTREACH and RFC8950 Translators  ?>
+    local role rs_server;
 <?php endif; ?>
 }
 
